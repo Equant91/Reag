@@ -1,11 +1,12 @@
 package com.reag.application;
 
+import android.content.Context;
 import android.content.Intent;
+import android.net.ConnectivityManager;
+import android.net.Network;
+import android.net.NetworkInfo;
 import android.net.Uri;
 import android.support.design.widget.NavigationView;
-import android.app.Fragment;
-import android.support.v4.app.FragmentManager;
-import android.support.v4.app.FragmentTransaction;
 import android.support.v4.view.GravityCompat;
 import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.ActionBarDrawerToggle;
@@ -17,29 +18,32 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.Button;
 import android.widget.ImageButton;
 import android.widget.TextView;
+import android.widget.Toast;
 
 public class ContentMainActivity extends AppCompatActivity  implements BlankFragment.onSomeEventListener, View.OnClickListener,
         NavigationView.OnNavigationItemSelectedListener, BlankFragment.OnFragmentInteractionListener{
 
     BlankFragment fragmentMain = null;
     BlankFragmentNext fragmentNext = null;
+    BlankFragmentMail fragmentMail = null;
 
     android.app.FragmentManager fragmentManager;
     android.app.FragmentTransaction fragmentTransaction;
 
     ImageButton buttonVK, buttonPhone0, buttonSite, buttonHome, buttonMail, buttonPhone, buttonPhoneMe;
     TextView textView, textView2;
-    Animation animationCallShow;
-    Animation animationCallMeShow;
-    Animation animationCallHide;
-    Animation animationCallMeHide;
+    Animation animationCallShow, animationCallMeShow, animationCallHide, animationCallMeHide;
+
+  ArrayOfStringFragment ValueStringFragment = new ArrayOfStringFragment();
 
 
     public static final int PROMOTION_CONST = 0;
     public static final int SPECIALOFFER_CONST = 1;
+    public static final int BACK_HOME = 50;
 
     boolean booPhone0 = true;
     private static String FRAGMENT_INSTANCE_NAME = "fragment";
@@ -69,11 +73,15 @@ public class ContentMainActivity extends AppCompatActivity  implements BlankFrag
         fragmentMain = (BlankFragment) fragmentManager.findFragmentByTag(FRAGMENT_INSTANCE_NAME);
 
         fragmentNext = new BlankFragmentNext();
+        fragmentMail = new BlankFragmentMail();
+
+
         if (fragmentMain == null) {
             fragmentMain = new BlankFragment();
 
 
             fragmentTransaction.add(R.id.conteiner, fragmentMain, FRAGMENT_INSTANCE_NAME);
+            ValueStringFragment.addStringFragment(ValueStringFragment.ValueBlankFragment);
             fragmentTransaction.commit();
         }
 
@@ -96,8 +104,10 @@ public class ContentMainActivity extends AppCompatActivity  implements BlankFrag
         buttonVK.setOnClickListener(this);
         buttonPhone0.setOnClickListener(this);
         buttonPhone.setOnClickListener(this);
+        buttonPhoneMe.setOnClickListener(this);
         buttonSite.setOnClickListener(this);
         buttonMail.setOnClickListener(this);
+
 
     }
 
@@ -107,8 +117,11 @@ public class ContentMainActivity extends AppCompatActivity  implements BlankFrag
         DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
         if (drawer.isDrawerOpen(GravityCompat.START)) {
             drawer.closeDrawer(GravityCompat.START);
+
         } else {
+            ValueStringFragment.deleteStringFragment();
             super.onBackPressed();
+
         }
     }
 /////////////////////////////////////////////////////////
@@ -119,50 +132,45 @@ public class ContentMainActivity extends AppCompatActivity  implements BlankFrag
         return true;
     }*/
 
-    @Override
-    public boolean onOptionsItemSelected(MenuItem item) {
-        // Handle action bar item clicks here. The action bar will
-        // automatically handle clicks on the Home/Up button, so long
-        // as you specify a parent activity in AndroidManifest.xml.
-        int id = item.getItemId();
 
-        //noinspection SimplifiableIfStatement
-        if (id == R.id.action_settings) {
-            return true;
-        }
 
-        return super.onOptionsItemSelected(item);
-    }
 
     @SuppressWarnings("StatementWithEmptyBody")
     @Override
     public boolean onNavigationItemSelected(MenuItem item) {
         // Handle navigation view item clicks here.
         int id = item.getItemId();
-/*
-        if (id == R.id.nav_camera) {
-            // Handle the camera action
-        } else if (id == R.id.nav_gallery) {
-
-        } else if (id == R.id.nav_slideshow) {
-
-        } else if (id == R.id.nav_manage) {
-
-        } else if (id == R.id.nav_share) {
-
-        } else if (id == R.id.nav_send) {
-
+switch (id){
+    case R.id.home_menu:
+        onButtonHomePressed();
+        break;
+    case R.id.special_offer_menu:
+        OnButtonSpecialOfferPressed();
+        Toast.makeText(this, "12", Toast.LENGTH_SHORT).show();
+        break;
+    case R.id.exit:
+        finish();
+        break;
+       
         }
-*/
+
         DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
         drawer.closeDrawer(GravityCompat.START);
         return true;
     }
 
+
+
+
+
     @Override
     public void onFragmentInteraction(Uri uri) {
 
     }
+
+
+
+
 
     @Override
     public void onClick(View v) {
@@ -178,28 +186,8 @@ public class ContentMainActivity extends AppCompatActivity  implements BlankFrag
                 startActivity(intent);
                 break;
 
-            case R.id.iButtonPhone:
-                if (booPhone0 == true) {
-
-                    buttonPhone.startAnimation(animationCallShow);
-                    textView.startAnimation(animationCallShow);
-                    buttonPhoneMe.startAnimation(animationCallMeShow);
-                    textView2.startAnimation(animationCallMeShow);
-
-
-
-                    booPhone0 = false;
-
-
-                } else {
-
-
-                    buttonPhone.startAnimation(animationCallHide);
-                    textView.startAnimation(animationCallHide);
-                    buttonPhoneMe.startAnimation(animationCallMeHide);
-                    textView2.startAnimation(animationCallMeHide);
-                    booPhone0 = true;
-                }
+            case R.id.iButtonPhone: ///////////////////////////центральная кнопка
+               onButtonPhonePressed();
                 break;
 
             case R.id.buttonPhone:
@@ -207,45 +195,133 @@ public class ContentMainActivity extends AppCompatActivity  implements BlankFrag
                 intent.setAction(Intent.ACTION_DIAL);
                 intent.setData(Uri.parse("tel:89876543210"));
                 startActivity(intent);
+                onButtonPhonePressed();
                 break;
+            case R.id.buttonPhoneMe:
+                if (ValueStringFragment.getStringFragment() != ValueStringFragment.ValueBlankFragmentMailPhone) {
+                    if (ValueStringFragment.getStringFragment() == ValueStringFragment.ValueBlankFragmentMailMail) {
+                        fragmentMail = new BlankFragmentMail();
 
+                    }
+                    BlankFragmentMail.Int_0_MailOr_1_Phone = 1;
+                    fragmentTransaction = fragmentManager.beginTransaction();
+                    fragmentTransaction.replace(R.id.conteiner, fragmentMail);
+                    fragmentTransaction.addToBackStack("frag");
+                    ValueStringFragment.addStringFragment(ValueStringFragment.ValueBlankFragmentMailPhone);
+                    fragmentTransaction.commit();
+                    onButtonPhonePressed();
+                }
+                break;
             case R.id.iButtonSait:
-                intent = new Intent();
+              /* intent = new Intent();
                 intent.setAction(Intent.ACTION_VIEW);
                 intent.setData(Uri.parse("https://Enspirion.ru"));
-                startActivity(intent);
+                startActivity(intent);*/
+                Toast.makeText(this, "asd"+ValueStringFragment.getStringFragment(), Toast.LENGTH_SHORT).show();
                 break;
             case R.id.iButtonHome:
-                fragmentTransaction = fragmentManager.beginTransaction();
-
-                fragmentTransaction.replace(R.id.conteiner, fragmentMain);
-                fragmentTransaction.commit();
+              onButtonHomePressed();
                 break;
+
             case R.id.iButtonMail:
-                intent = new Intent(this, NextActivity.class);
-                startActivity(intent);
+                if (ValueStringFragment.getStringFragment() != ValueStringFragment.ValueBlankFragmentMailMail) {
+                    if (ValueStringFragment.getStringFragment() == ValueStringFragment.ValueBlankFragmentMailPhone) {
+                        fragmentMail = new BlankFragmentMail();
 
-
+                    }
+                    BlankFragmentMail.Int_0_MailOr_1_Phone = 0;
+                    fragmentTransaction = fragmentManager.beginTransaction();
+                    fragmentTransaction.replace(R.id.conteiner, fragmentMail);
+                    fragmentTransaction.addToBackStack("frag");
+                    ValueStringFragment.addStringFragment(ValueStringFragment.ValueBlankFragmentMailMail);
+                    fragmentTransaction.commit();
+                    break;
+                }
         }
     }
 
+
+
+
     @Override
     public void someEvent(int button) {
-        fragmentTransaction = fragmentManager.beginTransaction();
+
         switch (button) {
             case PROMOTION_CONST:
+                fragmentTransaction = fragmentManager.beginTransaction();
                 fragmentTransaction.replace(R.id.conteiner, fragmentNext);
                 fragmentTransaction.addToBackStack("frag");
                 ArrayOfImage.numberOfArrey = PROMOTION_CONST;
+                ValueStringFragment.addStringFragment(ValueStringFragment.ValueBlankFragmentNext);
+                fragmentTransaction.commit();
                 break;
             case SPECIALOFFER_CONST:
-                fragmentTransaction.replace(R.id.conteiner, fragmentNext);
-                fragmentTransaction.addToBackStack("frag");
-                ArrayOfImage.numberOfArrey = SPECIALOFFER_CONST;
+
+               OnButtonSpecialOfferPressed();
                 break;
+            case BACK_HOME:
+                onBackPressed();
+
+                InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
+                imm.hideSoftInputFromWindow(buttonPhoneMe.getWindowToken(),
+                        InputMethodManager.HIDE_NOT_ALWAYS);
+                ValueStringFragment.addStringFragment(ValueStringFragment.ValueBlankFragment); ;
 
         }
-        fragmentTransaction.commit();
+
+    }
+
+
+
+    /////////////////////////////////////////////////////////////////// цунтральная кнопка
+    private void onButtonPhonePressed(){
+        if (booPhone0 == true) {
+
+            buttonPhone.startAnimation(animationCallShow);
+            textView.startAnimation(animationCallShow);
+            buttonPhoneMe.startAnimation(animationCallMeShow);
+            textView2.startAnimation(animationCallMeShow);
+
+
+
+            booPhone0 = false;
+
+
+        } else {
+
+
+            buttonPhone.startAnimation(animationCallHide);
+            textView.startAnimation(animationCallHide);
+            buttonPhoneMe.startAnimation(animationCallMeHide);
+            textView2.startAnimation(animationCallMeHide);
+            booPhone0 = true;
+        }
+    }
+    private void onButtonHomePressed() {        ///////////////////////////////////////////////////////////кнопки домой
+        if (ValueStringFragment.getStringFragment() != ValueStringFragment.ValueBlankFragment){
+            fragmentTransaction = fragmentManager.beginTransaction();
+            fragmentTransaction.replace(R.id.conteiner, fragmentMain);
+            fragmentTransaction.addToBackStack("frag");
+            ValueStringFragment.addStringFragment(ValueStringFragment.ValueBlankFragment);
+            fragmentTransaction.commit();
+
+
+        }
+        else
+            Toast.makeText(this, "Вы уже дома.", Toast.LENGTH_SHORT).show();
+    }
+
+
+    private void OnButtonSpecialOfferPressed() {////////////////////////////////// кнопка спец предложение
+        if (ValueStringFragment.getStringFragment() != ValueStringFragment.ValueBlankFragmentNext) {
+            fragmentTransaction = fragmentManager.beginTransaction();
+            fragmentTransaction.replace(R.id.conteiner, fragmentNext);
+            fragmentTransaction.addToBackStack("frag");
+            ArrayOfImage.numberOfArrey = SPECIALOFFER_CONST;
+            ValueStringFragment.addStringFragment(ValueStringFragment.ValueBlankFragmentNext);
+            ;
+            fragmentTransaction.commit();
+        }
     }
 
 }
